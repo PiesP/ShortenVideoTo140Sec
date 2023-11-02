@@ -36,7 +36,7 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.JEKYLL_PAT }}
 
     - name: Upload EXE to GitHub Releases
       uses: actions/upload-release-asset@v1
