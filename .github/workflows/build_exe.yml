@@ -36,7 +36,7 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.JEKYLL_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload EXE to GitHub Releases
       uses: actions/upload-release-asset@v1
@@ -45,5 +45,3 @@ jobs:
         asset_path: ./dist/ShortenVideoTo140Sec.exe
         asset_name: ShortenVideoTo140Sec.exe
         asset_content_type: application/octet-stream
-      env:
-        GITHUB_TOKEN: ${{ secrets.JEKYLL_PAT }}  
