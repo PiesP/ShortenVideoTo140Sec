@@ -15,8 +15,8 @@ def validate_file_extension(file_path, valid_extensions):
     return ext.lower() in valid_extensions
 
 # 필요한 패키지들을 설치합니다.
-install_package('moviepy')
-install_package('tk')
+# install_package('moviepy')
+# install_package('tk')
 
 from tkinter import Tk, filedialog
 from moviepy.editor import VideoFileClip, vfx, ImageClip, concatenate_videoclips
@@ -29,6 +29,7 @@ def select_file(title, filetypes):
     root = Tk()
     root.withdraw()  # GUI 창을 숨깁니다.
     file_path = filedialog.askopenfilename(title=title, filetypes=filetypes)
+    root.destroy()  
     return file_path
 
 # 사용자에게 동영상 파일의 경로를 선택하게 합니다.
@@ -67,6 +68,9 @@ if video_duration > 139:
     # 조절된 동영상을 저장합니다.
     adjusted_filename = os.path.splitext(video_path)[0] + '_adjusted.mp4'
     adjusted_clip.write_videofile(adjusted_filename)
+    clip.close()  # 비디오 클립을 닫습니다.
+    if image_path:
+        image_clip.close()  # 이미지 클립을 닫습니다.
     print(f'조절된 동영상이 {adjusted_filename}로 저장되었습니다.')
 else:
     print('동영상의 길이가 이미 139초 이하입니다.')

@@ -31,7 +31,7 @@ jobs:
       run: pyinstaller --onefile --windowed ShortenVideoTo140Sec.py
 
     - name: Rename EXE for Release
-      run: Rename-Item dist\ShortenVideoTo140Sec.exe YourAppName.exe
+      run: Rename-Item dist\ShortenVideoTo140Sec.exe ShortenVideoTo140Sec.exe
 
     - name: Create Release
       id: create_release
@@ -48,8 +48,8 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/YourAppName.exe
-        asset_name: YourAppName.exe
+        asset_path: ./dist/ShortenVideoTo140Sec.exe
+        asset_name: ShortenVideoTo140Sec.exe
         asset_content_type: application/octet-stream
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
