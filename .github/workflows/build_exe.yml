@@ -1,4 +1,4 @@
-name: Build EXE with cx_Freeze
+name: Build EXE with PyInstaller
 
 on:
   push:
@@ -22,19 +22,16 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install cx_Freeze
+        pip install pyinstaller
 
-    - name: Create setup.py for cx_Freeze
-      run: |
-        echo "import sys" > setup.py
-        echo "from cx_Freeze import setup, Executable" >> setup.py
-        echo "setup(name='ShortenVideoTo140Sec'," >> setup.py
-        echo "      version='0.1'," >> setup.py
-        echo "      description='ShortenVideoTo140Sec'," >> setup.py
-        echo "      executables=[Executable('ShortenVideoTo140Sec.py')])" >> setup.py
+    - name: Install project dependencies
+      run: pip install -r requirements.txt
 
-    - name: Build EXE with cx_Freeze
-      run: python setup.py build
+    - name: Build EXE with PyInstaller
+      run: pyinstaller --onefile --windowed YourScriptName.py
+
+    - name: Rename EXE for Release
+      run: Rename-Item dist\YourScriptName.exe YourAppName.exe
 
     - name: Create Release
       id: create_release
@@ -45,14 +42,14 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload EXE to GitHub Releases
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/exe.win-amd64-3.9/ShortenVideoTo140Sec.exe
-        asset_name: ShortenVideoTo140Sec.exe
+        asset_path: ./dist/YourAppName.exe
+        asset_name: YourAppName.exe
         asset_content_type: application/octet-stream
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
