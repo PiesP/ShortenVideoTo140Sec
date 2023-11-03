@@ -42,7 +42,7 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
 
     - name: Upload EXE to GitHub Releases
       uses: actions/upload-release-asset@v1
@@ -52,4 +52,4 @@ jobs:
         asset_name: YourAppName.exe
         asset_content_type: application/octet-stream
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
