@@ -37,6 +37,9 @@ jobs:
       id: date
       run: echo "TAG=$(Get-Date -Format "yyyyMMddHHmmss")" >> $GITHUB_ENV
 
+    - name: Check TAG environment variable
+      run: echo "TAG value is $TAG"
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -46,7 +49,7 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload EXE to GitHub Releases
       uses: actions/upload-release-asset@v1
