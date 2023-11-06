@@ -37,6 +37,8 @@ jobs:
       run:  |
         echo "TAG=$(Get-Date -Format 'yyyyMMddHHmmss')" >> "$GITHUB_ENV"
         echo "TAG value is $TAG"
+        echo "TAG value is ${{ TAG }}"
+        echo "TAG value is $TAG"
 
     - name: Create Release
       id: create_release
