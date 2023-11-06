@@ -33,12 +33,16 @@ jobs:
     - name: Rename EXE for Release
       run: Rename-Item dist\ShortenVideoTo140Sec.exe ShortenVideoTo140Sec.exe
 
+    - name: Generate tag from date
+      id: date
+      run: echo "TAG=$(Get-Date -Format "yyyyMMddHHmmss")" >> $GITHUB_ENV
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
+        tag_name: ${{ env.TAG }}
+        release_name: Release ${{ env.TAG }}
         draft: false
         prerelease: false
       env:
