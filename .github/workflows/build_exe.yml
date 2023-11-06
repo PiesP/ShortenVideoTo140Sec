@@ -42,8 +42,8 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       with:
-        tag_name: ${{ env.TAG }}
-        release_name: Release ${{ env.TAG }}
+        tag_name: ${{ TAG }}
+        release_name: Release ${{ TAG }}
         draft: false
         prerelease: false
       env:
