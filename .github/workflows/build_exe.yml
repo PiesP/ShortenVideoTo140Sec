@@ -34,16 +34,14 @@ jobs:
       run: Rename-Item dist\ShortenVideoTo140Sec.exe ShortenVideoTo140Sec.exe
 
     - name: Generate tag from date
-      run:  |
-        echo "TAG=$(Get-Date -Format 'yyyyMMddHHmmss')" >> "$GITHUB_ENV"
-        echo "TAG value is $TAG"
+      run: echo "TAG=$(Get-Date -Format 'yyyyMMddHHmmss')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       with:
-        tag_name: $TAG
-        release_name: Release $TAG
+        tag_name: ${{ env.TAG }}"
+        release_name: Release ${{ env.TAG }}"
         draft: false
         prerelease: false
       env:
