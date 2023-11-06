@@ -35,7 +35,7 @@ jobs:
 
     - name: Generate tag from date
       run:  |
-        echo "TAG=$(Get-Date -Format 'yyyyMMddHHmmss')" >> $GITHUB_ENV
+        echo "TAG=$(Get-Date -Format 'yyyyMMddHHmmss')" >> "$GITHUB_ENV"
         echo "TAG value is ${{ env.TAG }}"
 
     - name: Create Release
