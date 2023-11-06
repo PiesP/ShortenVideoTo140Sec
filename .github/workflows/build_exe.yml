@@ -1,9 +1,6 @@
 name: Build EXE with PyInstaller
 
 on:
-  push:
-    paths:
-      - '**.py'
   workflow_dispatch:
 
 jobs:
