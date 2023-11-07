@@ -98,15 +98,17 @@ class VideoProcessorApp:
                 if self.cancel_event.is_set():
                     raise Exception("Video processing was cancelled.")
 
-                clip.close()
-                if image_path:
-                    image_clip.close()
-
-                self.root.after(0, lambda: messagebox.showinfo('Complete', f'Adjusted video saved as {adjusted_filename}.'))
-                self.root.after(0, self.root.destroy)
+                adjusted_clip.close()
             else:
-                self.root.after(0, lambda: messagebox.showinfo('Info', 'Video duration is already below 140 seconds.'))
-                self.root.after(0, self.root.destroy)
+                # Save the video with the image appended if there's an image, otherwise just inform the user.
+                if image_path:
+                    logger = TkProgressBarLogger(self.progress_var, 100, self.status_var, self.cancel_event)
+                    clip.write_videofile(adjusted_filename, logger=logger)
+                else:
+                    self.root.after(0, lambda: messagebox.showinfo('Info', 'Video duration is already below 140 seconds and no image was added.'))
+
+            self.root.after(0, lambda: messagebox.showinfo('Complete', f'Video saved as {adjusted_filename}.'))
+            self.root.after(0, self.root.destroy)
         except Exception as e:
             error_message = str(e)
             self.root.after(0, lambda: messagebox.showerror('Error', error_message))
