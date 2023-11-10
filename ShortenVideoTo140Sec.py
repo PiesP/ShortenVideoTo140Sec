@@ -94,6 +94,7 @@ class VideoProcessorApp:
 
             else:
                 self.root.after(0, lambda: messagebox.showinfo('Info', 'No processing was needed.'))
+            self.root.after(0, self.finish_processing)
 
         except Exception as e:
             self.handle_video_processing_error(e, adjusted_filename)
@@ -113,8 +114,16 @@ class VideoProcessorApp:
 
     def handle_video_processing_error(self, error, filename):
         error_message = str(error)
-        self.root.after(0, lambda: messagebox.showerror('Error', error_message))
+        self.root.after(0, lambda: messagebox.showerror('Error', error_message, master=self.root))
         self.attempt_cleanup_incomplete_file(filename)
+        self.root.after(0, self.safe_destroy)
+
+    def finish_processing(self):
+        messagebox.showinfo('Info', 'Video processing completed.')
+        self.safe_destroy()
+
+    def safe_destroy(self):
+        self.root.destroy()
 
     def attempt_cleanup_incomplete_file(self, filename):
         try:
