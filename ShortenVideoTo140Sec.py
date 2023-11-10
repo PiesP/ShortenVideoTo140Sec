@@ -56,22 +56,17 @@ class VideoProcessorApp:
         self.show_dialogs()
 
     def show_dialogs(self):
-        try:
-            video_path = select_file('Select a video file', [('Video files', '*.mp4 *.mkv *.avi *.mov *.flv')])
-            if video_path and not validate_file_extension(video_path, ['.mp4', '.mkv', '.avi', '.mov', '.flv']):
-                raise ValueError('Unsupported video file format.')
-            elif not video_path:
-                return
+        video_path = select_file('Select a video file', [('Video files', '*.mp4 *.mkv *.avi *.mov *.flv')])
+        if not video_path or not validate_file_extension(video_path, ['.mp4', '.mkv', '.avi', '.mov', '.flv']):
+            messagebox.showerror('Error', 'Unsupported video file format or no file was selected.')
+            return
 
-            image_path = select_file('Select an image file to insert (skip if not needed)', [('Image files', '*.jpg *.jpeg *.png *.bmp *.gif')])
-            if image_path and not validate_file_extension(image_path, ['.jpg', '.jpeg', '.png', '.bmp', '.gif']):
-                raise ValueError('Unsupported image file format.')
-            elif not image_path:
-                image_path = None
+        image_path = select_file('Select an image file to insert (skip if not needed)', [('Image files', '*.jpg *.jpeg *.png *.bmp *.gif')])
+        if image_path and not validate_file_extension(image_path, ['.jpg', '.jpeg', '.png', '.bmp', '.gif']):
+            messagebox.showerror('Error', 'Unsupported image file format.')
+            return
 
-            self.process_video(video_path, image_path)
-        except ValueError as e:
-            messagebox.showerror('Error', str(e))
+        self.process_video(video_path, image_path)
 
     def process_video(self, video_path, image_path):
         threading.Thread(target=self._process_video_thread, args=(video_path, image_path)).start()
@@ -88,41 +83,50 @@ class VideoProcessorApp:
             if video_duration > 139.98:
                 speedup_factor = video_duration / 139.98
                 adjusted_clip = clip.fx(vfx.speedx, speedup_factor)
-                logger = TkProgressBarLogger(self.progress_var, 100, self.status_var, self.cancel_event)
 
-                if self.cancel_event.is_set():
-                    raise Exception("Video processing was cancelled.")
+                logger = self.setup_logger()
+                self.write_video_file(adjusted_clip, adjusted_filename, logger)
+                
+            elif image_path:
+                logger = self.setup_logger()
+                clip = concatenate_videoclips([ImageClip(image_path), clip])
+                clip.write_videofile(adjusted_filename, logger=logger)
 
-                adjusted_clip.write_videofile(adjusted_filename, logger=logger)
-
-                if self.cancel_event.is_set():
-                    raise Exception("Video processing was cancelled.")
-
-                adjusted_clip.close()
             else:
-                # Save the video with the image appended if there's an image, otherwise just inform the user.
-                if image_path:
-                    logger = TkProgressBarLogger(self.progress_var, 100, self.status_var, self.cancel_event)
-                    clip.write_videofile(adjusted_filename, logger=logger)
-                else:
-                    self.root.after(0, lambda: messagebox.showinfo('Info', 'Video duration is already below 140 seconds and no image was added.'))
+                self.root.after(0, lambda: messagebox.showinfo('Info', 'No processing was needed.'))
 
-            self.root.after(0, lambda: messagebox.showinfo('Complete', f'Video saved as {adjusted_filename}.'))
-            self.root.after(0, self.root.destroy)
         except Exception as e:
-            error_message = str(e)
-            self.root.after(0, lambda: messagebox.showerror('Error', error_message))
-            if os.path.exists(adjusted_filename):
-                try:
-                    os.remove(adjusted_filename)
-                    self.root.after(0, lambda: messagebox.showinfo('Info', 'Cancelled and cleaned up incomplete video file.'))
-                except Exception as cleanup_error:
-                    self.root.after(0, lambda: messagebox.showerror('Error', f'Failed to delete incomplete video file: {cleanup_error}'))
-            self.root.after(0, self.root.destroy)
+            self.handle_video_processing_error(e, adjusted_filename)
+
         finally:
-            clip.close()
-            if image_path and 'image_clip' in locals():
-                image_clip.close()
+            self.cleanup_resources(clip, image_path)
+
+    def setup_logger(self):
+        return TkProgressBarLogger(self.progress_var, 100, self.status_var, self.cancel_event)
+
+    def write_video_file(self, clip, filename, logger):
+        try:
+            clip.write_videofile(filename, fps=24, bitrate="1400k", logger=logger)
+        except Exception as e:
+            print(f"Failed to write video file: {e}")
+            raise
+
+    def handle_video_processing_error(self, error, filename):
+        error_message = str(error)
+        self.root.after(0, lambda: messagebox.showerror('Error', error_message))
+        self.attempt_cleanup_incomplete_file(filename)
+
+    def attempt_cleanup_incomplete_file(self, filename):
+        try:
+            os.remove(filename)
+            self.root.after(0, lambda: messagebox.showinfo('Info', 'Cancelled and cleaned up incomplete video file.'))
+        except Exception as cleanup_error:
+            self.root.after(0, lambda: messagebox.showerror('Error', f'Failed to delete incomplete video file: {cleanup_error}'))
+
+    def cleanup_resources(self, clip, image_path):
+        clip.close()
+        if image_path and 'image_clip' in locals():
+            locals()['image_clip'].close()
 
     def cancel_processing(self):
         self.cancel_event.set()
