@@ -1,142 +1,256 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import cv2
-import os
-from concurrent.futures import ThreadPoolExecutor
+from tkinter import filedialog, messagebox, ttk
+from PIL import Image
 import threading
-import time
+import datetime
+import os
+import logging
+import subprocess
+import re
 
-class VideoProcessorApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title('Video Processing App')
-        self.root.geometry('300x100')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-        self.status_var = tk.StringVar()
-        self.status_label = tk.Label(root, textvariable=self.status_var)
-        self.status_label.pack(fill=tk.X, expand=True, padx=20, pady=5)
+VIDEO_FILE_TYPES = [("Video files", "*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.mpeg *.mpg *.webm *.ogg")]
+IMAGE_FILE_TYPES = [("Image files", "*.jpg *.jpeg *.png *.bmp *.gif *.tif *.tiff *.webp")]
 
-        self.progress_var = tk.DoubleVar()
-        self.progress_bar = ttk.Progressbar(root, variable=self.progress_var, maximum=100)
-        self.progress_bar.pack(fill=tk.X, expand=True, padx=20, pady=5)
+def select_file(file_types):
+    return filedialog.askopenfilename(filetypes=file_types)
 
-        self.cancel_button = ttk.Button(root, text="Cancel", command=self.cancel_processing)
-        self.cancel_button.pack(fill=tk.X, expand=True, padx=20, pady=5)
+def get_current_timestamp():
+    return datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
-        self.cancel_requested = False
-        self.executor = ThreadPoolExecutor(max_workers=1)
-        self.future = None
-        self.processing_completed = False
-
-        self.show_dialogs()
-
-    def show_dialogs(self):
-        try:
-            video_path = self.select_file('Select a video file', [('Video files', '*.mp4 *.mkv *.avi *.mov *.flv')])
-            if not video_path:
-                self.root.destroy()
-                return
-
-            if not self.validate_file_extension(video_path, ['.mp4', '.mkv', '.avi', '.mov', '.flv']):
-                raise ValueError('Unsupported video file format.')
-
-            image_path = self.select_file('Select an image file to insert (skip if not needed)', [('Image files', '*.jpg *.jpeg *.png *.bmp *.gif')])
-            if image_path and not self.validate_file_extension(image_path, ['.jpg', '.jpeg', '.png', '.bmp', '.gif']):
-                raise ValueError('Unsupported image file format.')
-            elif not image_path:
-                image_path = None
-
-            self.log_status("Processing started.")
-            self.future = self.executor.submit(self.process_video, video_path, image_path)
-
-        except ValueError as e:
-            messagebox.showerror('Error', str(e))
-
-    def select_file(self, title, filetypes):
-        return filedialog.askopenfilename(title=title, filetypes=filetypes)
-
-    def validate_file_extension(self, file_path, valid_extensions):
-        _, ext = os.path.splitext(file_path)
-        return ext.lower() in valid_extensions
-
-    def process_video(self, video_path, image_path):
-        adjusted_filename = os.path.splitext(video_path)[0] + '_adjusted.mp4'
-        try:
-            cap = cv2.VideoCapture(video_path)
-            if not cap.isOpened():
-                raise Exception("Error: Could not open video file.")
-
-            width, height, frame_count = self.get_video_properties(cap)
-            out = self.prepare_output_video(adjusted_filename, width, height, image_path)
-
-            self.process_frames(cap, out, frame_count)
-            self.finalize_video_processing(cap, out)
-
-            if not self.cancel_requested:
-                self.processing_completed = True
-                self.root.destroy()
-        except Exception as e:
-            self.log_status(f"Error: {str(e)}")
-
-    def get_video_properties(self, cap):
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        return width, height, frame_count
-
-    def prepare_output_video(self, adjusted_filename, width, height, image_path):
-        out = cv2.VideoWriter(adjusted_filename, cv2.VideoWriter_fourcc(*'mp4v'), 30, (width, height))
-        if image_path:
-            image = cv2.imread(image_path)
-            image = cv2.resize(image, (width, height), interpolation=cv2.INTER_CUBIC)
-            out.write(image)
-        return out
-
-    def process_frames(self, cap, out, frame_count):
-        for current_frame in range(frame_count):
-            if self.cancel_requested:
-                self.log_status("Processing cancelled.")
-                break
-
-            ret, frame = cap.read()
-            if not ret:
-                break
-            out.write(frame)
-            self.update_progress((current_frame / frame_count) * 100)
-
-        self.finalize_video_processing(cap, out)
-
-    def cancel_processing(self):
-        self.cancel_requested = True
-        if self.future:
-            self.future.cancel()
-        self.status_var.set('Processing cancelled.')
-        self.cancel_button.config(state=tk.DISABLED)
-
-        threading.Thread(target=self.wait_and_force_close, daemon=True).start()
-
-    def wait_and_force_close(self):
-        time.sleep(10)
-        if not self.processing_completed:
-            self.root.destroy()
-
-    def finalize_video_processing(self, cap, out):
-        cap.release()
-        if out is not None:
-            out.release()
-        self.log_status("Video processing finalized.")
-
-    def update_progress(self, progress_percentage):
-        self.progress_var.set(progress_percentage)
-
-    def log_status(self, message):
-        self.status_var.set(message)
-        print(message)
-
-if __name__ == '__main__':
-    root = tk.Tk()
+def execute_ffmpeg_command(cmd):
     try:
-        app = VideoProcessorApp(root)
-        root.mainloop()
+        result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True)
+        return result.stderr
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        logging.error("FFmpeg command execution failed: %s", e)
+        return None
+
+def get_video_duration(video_path):
+    stderr = execute_ffmpeg_command(['ffmpeg', '-i', video_path])
+    if stderr:
+        match = re.search(r'Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})', stderr)
+        if match:
+            hours, minutes, seconds = match.groups()
+            return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+    return None
+
+def update_ffmpeg_progress(process, progress_var, status_var, total_duration, current_task, root, cancel_event):
+    for line in iter(process.stdout.readline, ""):
+        if cancel_event.is_set():
+            process.terminate()
+            break
+
+        match = re.search(r'time=(\d{2}):(\d{2}):(\d{2})', line)
+        if match:
+            hours, minutes, seconds = map(int, match.groups())
+            elapsed_time = hours * 3600 + minutes * 60 + seconds
+            progress = (elapsed_time / total_duration) * 100
+            root.after(0, lambda: update_progress(progress_var, status_var, progress, current_task))
+
+    process.stdout.close()
+    process.wait()
+    root.after(0, lambda: update_progress(progress_var, status_var, 100, current_task))
+
+def run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, total_duration, current_task):
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1)
+
+    for line in iter(process.stdout.readline, ""):
+        if cancel_event.is_set():
+            process.terminate()
+            break
+
+        match = re.search(r'time=(\d{2}):(\d{2}):(\d{2})', line)
+        if match:
+            hours, minutes, seconds = map(int, match.groups())
+            elapsed_time = hours * 3600 + minutes * 60 + seconds
+            progress = (elapsed_time / total_duration) * 100
+            root.after(0, lambda: update_progress(progress_var, status_var, progress, current_task))
+
+    process.stdout.close()
+    process.wait()
+    root.after(0, lambda: update_progress(progress_var, status_var, 100, current_task))
+
+def update_progress(progress_var, status_var, progress, current_task):
+    progress_var.set(progress)
+    status_var.set(f"{current_task} 진행률: {progress:.2f}%")
+
+def adjust_video_speed(video_path, target_duration, progress_var, status_var, root, cancel_event):
+    current_task = "비디오 속도 조절"
+    status_var.set(f"{current_task} 중...")
+    duration = get_video_duration(video_path)
+    if duration is None:
+        return False, video_path
+
+    file_name, file_extension = os.path.splitext(video_path)
+    output_path = f"{file_name}_{get_current_timestamp()}{file_extension}"
+
+    if duration > target_duration:
+        speed_factor = duration / target_duration
+        cmd = [
+            'ffmpeg',
+            '-i', video_path,
+            '-filter:v', f"setpts={1/speed_factor}*PTS",
+            '-filter:a', f"atempo={speed_factor}" if 0.5 <= speed_factor <= 2 else f"atempo=2,atempo={speed_factor / 2}",
+            output_path
+        ]
+        run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, duration, current_task)
+        return True, output_path
+    else:
+        return False, video_path
+
+def resize_image(image_path, video_path, status_var):
+    current_task = "이미지 크기 조절"
+    status_var.set(f"{current_task} 중...")
+    try:
+        process = subprocess.Popen(['ffmpeg', '-i', video_path], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True)
+        stdout, stderr = process.communicate()
+        match = re.search(r'Stream.*Video.* (\d+)x(\d+)', stderr)
+        if match:
+            width, height = map(int, match.groups())
+            file_name, file_extension = os.path.splitext(image_path)
+            output_image_path = f"{file_name}_{get_current_timestamp()}{file_extension}"
+
+            with Image.open(image_path) as img:
+                img = img.resize((width, height))
+                img.save(output_image_path)
+
+            return output_image_path
+    except Exception as e:
+        logging.error("Error in resizing image: %s", e)
+    return image_path
+
+def insert_image_to_video(video_path, image_path, progress_var, status_var, root, cancel_event):
+    current_task = "이미지 삽입"
+    status_var.set(f"{current_task} 중...")
+    video_duration = get_video_duration(video_path)
+    if video_duration is None:
+        return None
+
+    file_name, file_extension = os.path.splitext(video_path)
+    output_video_path = f"{file_name}_{get_current_timestamp()}{file_extension}"
+
+    cmd = [
+        'ffmpeg',
+        '-i', video_path,
+        '-i', image_path,
+        '-filter_complex', "overlay=enable='eq(n,0)'",
+        output_video_path
+    ]
+    run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, video_duration, current_task)
+    return output_video_path
+
+def compress_video(input_video_path, progress_var, status_var, root, cancel_event):
+    current_task = "비디오 압축"
+    status_var.set(f"{current_task} 중...")
+    video_duration = get_video_duration(input_video_path)
+    if video_duration is None:
+        return input_video_path
+
+    file_name, file_extension = os.path.splitext(input_video_path)
+    output_video_path = f"{file_name}_compressed_{get_current_timestamp()}{file_extension}"
+
+    cmd = [
+        'ffmpeg',
+        '-i', input_video_path,
+        '-vcodec', 'libx265',
+        '-crf', '23',
+        output_video_path
+    ]
+    run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, video_duration, current_task)
+    return output_video_path
+
+def process_video(video_path, image_path, progress_var, status_var, cancel_event, root):
+    video_path_1 = video_path_2 = video_path_3 = image_path_1 = None
+    temp_files = []
+
+    try:
+        target_duration = 139
+        adjusted, video_path_1 = adjust_video_speed(video_path, target_duration, progress_var, status_var, root, cancel_event)
+        if cancel_event.is_set(): return
+        if adjusted and video_path_1 != video_path:
+            temp_files.append(video_path_1)
+
+        if image_path:
+            image_path_1 = resize_image(image_path, video_path_1, status_var)
+            if cancel_event.is_set(): return
+            if image_path_1 != image_path:
+                temp_files.append(image_path_1)
+
+            video_path_2 = insert_image_to_video(video_path_1, image_path_1, progress_var, status_var, root, cancel_event)
+            if cancel_event.is_set(): return
+            if video_path_2 != video_path_1:
+                temp_files.append(video_path_2)
+        else:
+            video_path_2 = video_path_1
+
+        video_path_3 = compress_video(video_path_2, progress_var, status_var, root, cancel_event)
+        if cancel_event.is_set(): return
+        if video_path_3 != video_path_2:
+            temp_files.append(video_path_3)
+
+        if cancel_event.is_set():
+            messagebox.showinfo("Cancelled", "Process was cancelled")
+            return
+
+        messagebox.showinfo("Completed", f"Video processing completed. Output saved to {video_path_3}")
+    except Exception as e:
+        logging.error("Exception occurred: %s", e)
+        messagebox.showerror("Error", str(e))
+    finally:
+        for file in temp_files:
+            if file and os.path.exists(file) and file != video_path_3:
+                os.remove(file)
+
+        root.quit()
+
+def start_processing(video_path, image_path, progress_var, status_var, cancel_event, root):
+    if video_path:
+        processing_thread = threading.Thread(target=process_video, args=(video_path, image_path, progress_var, status_var, cancel_event, root))
+        processing_thread.start()
+    else:
+        messagebox.showinfo("Cancelled", "Process cancelled by user")
+        root.quit()
+
+def main():
+    root = tk.Tk()
+    root.title("Shorten Video To 140s")
+    root.geometry("400x100")
+
+    progress_var = tk.DoubleVar()
+    status_var = tk.StringVar(value="진행 상태를 여기에 표시합니다.")
+
+    status_label = tk.Label(root, textvariable=status_var)
+    status_label.pack()
+
+    progress_bar = ttk.Progressbar(root, variable=progress_var, maximum=100)
+    progress_bar.pack(fill=tk.X, padx=10, pady=5)
+
+    cancel_event = threading.Event()
+
+    def on_cancel():
+        cancel_event.set()
+
+    cancel_button = tk.Button(root, text="Cancel", command=on_cancel)
+    cancel_button.pack()
+
+    video_path = select_file(VIDEO_FILE_TYPES)
+    if not video_path:
+        messagebox.showinfo("Cancelled", "No video file selected")
+        root.quit()
+        return
+
+    image_path = select_file(IMAGE_FILE_TYPES)
+
+    processing_thread = threading.Thread(target=start_processing, args=(video_path, image_path, progress_var, status_var, cancel_event, root))
+    processing_thread.daemon = True
+    processing_thread.start()
+
+    root.mainloop()
+
+    processing_thread.join()
+    root.destroy()
+
+if __name__ == "__main__":
+    main()

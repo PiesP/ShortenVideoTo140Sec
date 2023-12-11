@@ -12,11 +12,21 @@ This application is designed to process video files by potentially inserting an 
 
 ## Installation
 
-To run the Video Processing App, you need to have Python installed on your system. Follow these steps to install the application:
+To run the Video Processing App, you need to have Python and ffmpeg installed on your system. Follow these steps to install the application and its dependencies:
+
+### Python Installation
 
 1. Clone the repository or download the source code.
 2. Navigate to the project directory.
 3. Install the required dependencies by running `pip install -r requirements.txt`.
+
+### ffmpeg Installation
+
+This application requires ffmpeg for video processing. Follow these steps to install ffmpeg:
+
+- **Windows**: Download the ffmpeg build from [ffmpeg.org](https://ffmpeg.org/download.html) and add it to your system path.
+- **Linux**: Install ffmpeg using your distribution's package manager (e.g., `sudo apt-get install ffmpeg` for Ubuntu).
+- **macOS**: Install ffmpeg using Homebrew with the command `brew install ffmpeg`.
 
 ## Usage
 

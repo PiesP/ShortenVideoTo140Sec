@@ -1,43 +1,43 @@
 # Contributing to ShortenVideoTo140Sec
 
-We love your input! We want to make contributing to this project as easy and transparent as possible, whether it's:
+Your contributions are welcome here! We aim to make contributing to this project as easy and transparent as possible, whether it involves:
 - Reporting a bug
 - Discussing the current state of the code
 - Submitting a fix
 - Proposing new features
 - Becoming a maintainer
 
-## We Develop with Github
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+## We Develop with GitHub
+We use GitHub to host code, track issues and feature requests, as well as accept pull requests.
 
 ## Pull Requests
-Here's how you can make a pull request (PR):
+To contribute through a pull request (PR), follow these steps:
 
 1. Fork the repo and create your branch from `master`.
-2. Make sure your code lints.
-3. Issue that pull request!
+2. Ensure your code adheres to our coding style and guidelines.
+3. Issue your pull request!
 
-## Any contributions you make will be under the MIT Software License
-In short, when you submit code changes, your submissions are understood to be under the same [MIT License](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
+## Your Contributions Will Be Under the MIT Software License
+When you submit code changes, your submissions are understood to be under the same [MIT License](LICENSE) that covers the project. If you have any concerns about this, please contact the maintainers.
 
-## Report bugs using Github's [issues](https://github.com/PiesP/ShortenVideoTo140Sec/issues)
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/PiesP/ShortenVideoTo140Sec/issues/new); it's that easy!
+## Reporting Bugs
+We track public bugs via GitHub issues. Report a bug by [opening a new issue](https://github.com/PiesP/ShortenVideoTo140Sec/issues/new); it's that simple!
 
-**Great Bug Reports** tend to have:
-- A quick summary and/or background
-- Steps to reproduce
-  - Be specific!
-  - Give sample code if you can.
-- What you expected would happen
-- What actually happens
-- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
+**Effective Bug Reports** typically include:
+- A brief summary and/or background
+- Steps to reproduce the issue
+  - Be specific and detailed.
+  - If possible, provide sample code.
+- Your expected outcome
+- What actually happened
+- Additional notes (such as theories on why the issue might be occurring, or attempted solutions that didn't work)
 
-## Use a Consistent Coding Style
-* 4 spaces for indentation rather than tabs
-* You can try running `autopep8` for style unification
+## Coding Style Guidelines
+- Use 4 spaces for indentation rather than tabs.
+- Consider running `autopep8` for style consistency.
 
 ## License
 By contributing, you agree that your contributions will be licensed under its MIT License.
 
-## References
-This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/master/CONTRIBUTING.md)
+## Acknowledgments
+This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/master/CONTRIBUTING.md).
