@@ -163,6 +163,8 @@ def compress_video(input_video_path, progress_var, status_var, root, cancel_even
     run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, video_duration, current_task)
     return output_video_path
 
+import shutil
+
 def process_video(video_path, image_path, progress_var, status_var, cancel_event, root):
     video_path_1 = video_path_2 = video_path_3 = image_path_1 = None
     temp_files = []
@@ -185,7 +187,11 @@ def process_video(video_path, image_path, progress_var, status_var, cancel_event
             if video_path_2 != video_path_1:
                 temp_files.append(video_path_2)
         else:
-            video_path_2 = video_path_1
+            file_name, _ = os.path.splitext(video_path_1)
+            video_path_2 = f"{file_name}_{get_current_timestamp()}.mp4"
+            shutil.copy(video_path_1, video_path_2)
+            if video_path_2 != video_path_1:
+                temp_files.append(video_path_2)
 
         video_path_3 = compress_video(video_path_2, progress_var, status_var, root, cancel_event)
         if cancel_event.is_set(): return
