@@ -86,7 +86,7 @@ def adjust_video_speed(video_path, target_duration, progress_var, status_var, ro
         return False, video_path
 
     file_name, file_extension = os.path.splitext(video_path)
-    output_path = f"{file_name}_{get_current_timestamp()}{file_extension}"
+    output_path = f"{file_name}_{get_current_timestamp()}.mp4"
 
     if duration > target_duration:
         speed_factor = duration / target_duration
