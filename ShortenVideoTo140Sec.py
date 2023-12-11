@@ -8,6 +8,8 @@ import logging
 import subprocess
 import re
 
+CREATE_NO_WINDOW = 0x08000000
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 VIDEO_FILE_TYPES = [("Video files", "*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.mpeg *.mpg *.webm *.ogg")]
@@ -21,7 +23,7 @@ def get_current_timestamp():
 
 def execute_ffmpeg_command(cmd):
     try:
-        result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True)
+        result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True, creationflags=CREATE_NO_WINDOW)
         return result.stderr
     except Exception as e:
         logging.error("FFmpeg command execution failed: %s", e)
