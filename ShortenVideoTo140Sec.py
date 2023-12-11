@@ -76,11 +76,11 @@ def run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, total_
 
 def update_progress(progress_var, status_var, progress, current_task):
     progress_var.set(progress)
-    status_var.set(f"{current_task} 진행률: {progress:.2f}%")
+    status_var.set(f"Progress of {current_task}: {progress:.2f}%")
 
 def adjust_video_speed(video_path, target_duration, progress_var, status_var, root, cancel_event):
-    current_task = "비디오 속도 조절"
-    status_var.set(f"{current_task} 중...")
+    current_task = "Adjusting video speed"
+    status_var.set(f"{current_task} in progress...")
     duration = get_video_duration(video_path)
     if duration is None:
         return False, video_path
@@ -103,8 +103,8 @@ def adjust_video_speed(video_path, target_duration, progress_var, status_var, ro
         return False, video_path
 
 def resize_image(image_path, video_path, status_var):
-    current_task = "이미지 크기 조절"
-    status_var.set(f"{current_task} 중...")
+    current_task = "Resizing image"
+    status_var.set(f"{current_task} in progress...")
     try:
         process = subprocess.Popen(['ffmpeg', '-i', video_path], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True)
         stdout, stderr = process.communicate()
@@ -124,8 +124,8 @@ def resize_image(image_path, video_path, status_var):
     return image_path
 
 def insert_image_to_video(video_path, image_path, progress_var, status_var, root, cancel_event):
-    current_task = "이미지 삽입"
-    status_var.set(f"{current_task} 중...")
+    current_task = "Inserting image"
+    status_var.set(f"{current_task} in progress...")
     video_duration = get_video_duration(video_path)
     if video_duration is None:
         return None
@@ -144,8 +144,8 @@ def insert_image_to_video(video_path, image_path, progress_var, status_var, root
     return output_video_path
 
 def compress_video(input_video_path, progress_var, status_var, root, cancel_event):
-    current_task = "비디오 압축"
-    status_var.set(f"{current_task} 중...")
+    current_task = "Compressing video"
+    status_var.set(f"{current_task} in progress...")
     video_duration = get_video_duration(input_video_path)
     if video_duration is None:
         return input_video_path
@@ -221,7 +221,7 @@ def main():
     root.geometry("400x100")
 
     progress_var = tk.DoubleVar()
-    status_var = tk.StringVar(value="진행 상태를 여기에 표시합니다.")
+    status_var = tk.StringVar(value="Displaying the progress status here.")
 
     status_label = tk.Label(root, textvariable=status_var)
     status_label.pack()
