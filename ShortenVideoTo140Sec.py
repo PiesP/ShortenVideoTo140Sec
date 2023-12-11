@@ -56,7 +56,7 @@ def update_ffmpeg_progress(process, progress_var, status_var, total_duration, cu
     root.after(0, lambda: update_progress(progress_var, status_var, 100, current_task))
 
 def run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, total_duration, current_task):
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, creationflags=CREATE_NO_WINDOW)
 
     for line in iter(process.stdout.readline, ""):
         if cancel_event.is_set():
