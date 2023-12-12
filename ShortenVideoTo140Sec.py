@@ -1,12 +1,14 @@
+import threading
+import tempfile
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image
-import threading
 import datetime
 import os
 import logging
 import subprocess
 import re
+import shutil
 
 CREATE_NO_WINDOW = 0x08000000
 
@@ -25,18 +27,28 @@ def execute_ffmpeg_command(cmd):
     try:
         result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True, creationflags=CREATE_NO_WINDOW)
         return result.stderr
+    except subprocess.CalledProcessError as e:
+        logging.error("FFmpeg command execution error: %s", e)
+        messagebox.showerror("Execution Error", f"An error occurred while executing FFmpeg command: {e}")
+        return None
     except Exception as e:
-        logging.error("FFmpeg command execution failed: %s", e)
+        logging.error("Unexpected error: %s", e)
+        messagebox.showerror("Error", f"An unexpected error occurred: {e}")
         return None
 
 def get_video_duration(video_path):
-    stderr = execute_ffmpeg_command(['ffmpeg', '-i', video_path])
-    if stderr:
-        match = re.search(r'Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})', stderr)
-        if match:
-            hours, minutes, seconds = match.groups()
-            return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
-    return None
+    try:
+        stderr = execute_ffmpeg_command(['ffmpeg', '-i', video_path])
+        if stderr:
+            match = re.search(r'Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})', stderr)
+            if match:
+                hours, minutes, seconds = match.groups()
+                return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+        return None
+    except Exception as e:
+        logging.error("Error getting video duration: %s", e)
+        messagebox.showerror("Error", f"An error occurred while getting video duration: {e}")
+        return None
 
 def update_ffmpeg_progress(process, progress_var, status_var, total_duration, current_task, root, cancel_event):
     for line in iter(process.stdout.readline, ""):
@@ -85,8 +97,9 @@ def adjust_video_speed(video_path, target_duration, progress_var, status_var, ro
     if duration is None:
         return False, video_path
 
-    file_name, file_extension = os.path.splitext(video_path)
-    output_path = f"{file_name}_{get_current_timestamp()}.mp4"
+    temp_dir = tempfile.gettempdir()
+    file_name = os.path.basename(video_path)
+    output_path = os.path.join(temp_dir, f"{file_name}_{get_current_timestamp()}.mp4")
 
     if duration > target_duration:
         speed_factor = duration / target_duration
@@ -107,12 +120,13 @@ def resize_image(image_path, video_path, status_var):
     status_var.set(f"{current_task} in progress...")
     try:
         process = subprocess.Popen(['ffmpeg', '-i', video_path], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, universal_newlines=True)
-        stdout, stderr = process.communicate()
+        _, stderr = process.communicate()
         match = re.search(r'Stream.*Video.* (\d+)x(\d+)', stderr)
         if match:
             width, height = map(int, match.groups())
-            file_name, file_extension = os.path.splitext(image_path)
-            output_image_path = f"{file_name}_{get_current_timestamp()}{file_extension}"
+            temp_dir = tempfile.gettempdir()
+            file_name = os.path.basename(image_path)
+            output_image_path = os.path.join(temp_dir, f"{file_name}_{get_current_timestamp()}{os.path.splitext(image_path)[1]}")
 
             with Image.open(image_path) as img:
                 img = img.resize((width, height))
@@ -130,8 +144,9 @@ def insert_image_to_video(video_path, image_path, progress_var, status_var, root
     if video_duration is None:
         return None
 
-    file_name, file_extension = os.path.splitext(video_path)
-    output_video_path = f"{file_name}_{get_current_timestamp()}{file_extension}"
+    temp_dir = tempfile.gettempdir()
+    file_name = os.path.basename(video_path)
+    output_video_path = os.path.join(temp_dir, f"{file_name}_{get_current_timestamp()}.mp4")
 
     cmd = [
         'ffmpeg',
@@ -150,8 +165,8 @@ def compress_video(input_video_path, progress_var, status_var, root, cancel_even
     if video_duration is None:
         return input_video_path
 
-    file_name, file_extension = os.path.splitext(input_video_path)
-    output_video_path = f"{file_name}_compressed_{get_current_timestamp()}{file_extension}"
+    file_name, _ = os.path.splitext(os.path.basename(input_video_path))
+    output_video_path = os.path.join(os.path.dirname(input_video_path), f"{file_name}_compressed_{get_current_timestamp()}.mp4")
 
     cmd = [
         'ffmpeg',
@@ -163,55 +178,59 @@ def compress_video(input_video_path, progress_var, status_var, root, cancel_even
     run_ffmpeg_command(cmd, progress_var, status_var, root, cancel_event, video_duration, current_task)
     return output_video_path
 
-import shutil
-
 def process_video(video_path, image_path, progress_var, status_var, cancel_event, root):
     video_path_1 = video_path_2 = video_path_3 = image_path_1 = None
     temp_files = []
 
-    try:
-        target_duration = 139
-        adjusted, video_path_1 = adjust_video_speed(video_path, target_duration, progress_var, status_var, root, cancel_event)
-        if cancel_event.is_set(): return
-        if adjusted and video_path_1 != video_path:
-            temp_files.append(video_path_1)
-
-        if image_path:
-            image_path_1 = resize_image(image_path, video_path_1, status_var)
+    def video_processing():
+        try:
+            target_duration = 139
+            adjusted, video_path_1 = adjust_video_speed(video_path, target_duration, progress_var, status_var, root, cancel_event)
             if cancel_event.is_set(): return
-            if image_path_1 != image_path:
-                temp_files.append(image_path_1)
+            if adjusted and video_path_1 != video_path:
+                temp_files.append(video_path_1)
 
-            video_path_2 = insert_image_to_video(video_path_1, image_path_1, progress_var, status_var, root, cancel_event)
+            if image_path:
+                image_path_1 = resize_image(image_path, video_path_1, status_var)
+                if cancel_event.is_set(): return
+                if image_path_1 != image_path:
+                    temp_files.append(image_path_1)
+
+                video_path_2 = insert_image_to_video(video_path_1, image_path_1, progress_var, status_var, root, cancel_event)
+                if cancel_event.is_set(): return
+                if video_path_2 != video_path_1:
+                    temp_files.append(video_path_2)
+            else:
+                file_name, _ = os.path.splitext(video_path_1)
+                video_path_2 = f"{file_name}_{get_current_timestamp()}.mp4"
+                shutil.copy(video_path_1, video_path_2)
+                if video_path_2 != video_path_1:
+                    temp_files.append(video_path_2)
+
+            video_path_3 = compress_video(video_path_2, progress_var, status_var, root, cancel_event)
             if cancel_event.is_set(): return
-            if video_path_2 != video_path_1:
-                temp_files.append(video_path_2)
-        else:
-            file_name, _ = os.path.splitext(video_path_1)
-            video_path_2 = f"{file_name}_{get_current_timestamp()}.mp4"
-            shutil.copy(video_path_1, video_path_2)
-            if video_path_2 != video_path_1:
-                temp_files.append(video_path_2)
+            if video_path_3 != video_path_2:
+                temp_files.append(video_path_3)
 
-        video_path_3 = compress_video(video_path_2, progress_var, status_var, root, cancel_event)
-        if cancel_event.is_set(): return
-        if video_path_3 != video_path_2:
-            temp_files.append(video_path_3)
+            final_output_path = os.path.join(os.path.dirname(video_path), os.path.basename(video_path_3))
+            shutil.move(video_path_3, final_output_path)
 
-        if cancel_event.is_set():
-            messagebox.showinfo("Cancelled", "Process was cancelled")
-            return
+            if cancel_event.is_set():
+                messagebox.showinfo("Cancelled", "Process was cancelled")
+            else:
+                messagebox.showinfo("Completed", f"Video processing completed. Output saved to {final_output_path}")
+            root.quit()
 
-        messagebox.showinfo("Completed", f"Video processing completed. Output saved to {video_path_3}")
-    except Exception as e:
-        logging.error("Exception occurred: %s", e)
-        messagebox.showerror("Error", str(e))
-    finally:
-        for file in temp_files:
-            if file and os.path.exists(file) and file != video_path_3:
-                os.remove(file)
+        except Exception as e:
+            logging.error("Exception occurred during video processing: %s", e)
+            messagebox.showerror("Processing Error", f"An error occurred during video processing: {e}")
+        finally:
+            for file in temp_files:
+                if file and os.path.exists(file) and file != video_path_3:
+                    os.remove(file)
 
-        root.quit()
+    processing_thread = threading.Thread(target=video_processing)
+    processing_thread.start()
 
 def start_processing(video_path, image_path, progress_var, status_var, cancel_event, root):
     if video_path:
