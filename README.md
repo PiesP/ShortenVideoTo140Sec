@@ -18,7 +18,6 @@ To run the Video Processing App, you need to have Python and ffmpeg installed on
 
 1. Clone the repository or download the source code.
 2. Navigate to the project directory.
-3. Install the required dependencies by running `pip install -r requirements.txt`.
 
 ### ffmpeg Installation
 
@@ -32,7 +31,7 @@ This application requires ffmpeg for video processing. Follow these steps to ins
 
 To use the Video Processing App, follow these steps:
 
-1. Run the main script using Python with the command `python ShortenVideoTo140Sec.py`.
+1. Run the main script using Python with the command `python main.py`.
 2. Follow the GUI prompts to select a video file and optionally an image file.
 3. The application will process the video and provide a progress update.
 4. Once processing is complete, the adjusted video will be saved in the same directory.
