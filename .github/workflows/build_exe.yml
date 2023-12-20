@@ -29,6 +29,13 @@ jobs:
         echo "TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         Rename-Item .\dist\main.exe "ShortenVideoTo140Sec-$tag.exe"
 
+    - name: Push tag
+      run: |
+        git config --global user.name 'Your Name'
+        git config --global user.email 'your-email@example.com'
+        git tag ${{ env.TAG }}
+        git push origin ${{ env.TAG }}
+
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
