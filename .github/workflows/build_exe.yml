@@ -36,18 +36,6 @@ jobs:
           -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\"}" `
           https://api.github.com/repos/PiesP/ShortenVideoTo140Sec/releases
         echo "Release response: $response"
-      shell: pwsh
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Create GitHub Release
-      run: |
-        $response = curl -s -X POST `
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
-          -H "Content-Type: application/json" `
-          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\"}" `
-          https://api.github.com/repos/PiesP/ShortenVideoTo140Sec/releases
-        echo "Release response: $response"
         $parsedResponse = $response | ConvertFrom-Json
         if ($parsedResponse -eq $null) {
           Write-Host "Failed to parse response or response is empty"
