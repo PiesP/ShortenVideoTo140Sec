@@ -46,8 +46,9 @@ jobs:
         curl -s -X POST `
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
           -H "Content-Type: application/octet-stream" `
-          --data-binary @./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe `
+          --data-binary `"@./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe`" `
           "https://uploads.github.com/repos/PiesP/ShortenVideoTo140Sec/releases/$releaseId/assets?name=ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
       shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
