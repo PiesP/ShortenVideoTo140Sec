@@ -40,17 +40,20 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload Release Asset
+    - name: Create GitHub Release
       run: |
-        $releaseId = (ConvertFrom-Json $response).id
-        $filePath = "${{ github.workspace }}/dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
-        curl -s -X POST `
+        $response = curl -s -X POST `
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
-          -H "Content-Type: application/octet-stream" `
-          --data-binary @$filePath `
-          "https://uploads.github.com/repos/PiesP/ShortenVideoTo140Sec/releases/$releaseId/assets?name=ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
+          -H "Content-Type: application/json" `
+          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\"}" `
+          https://api.github.com/repos/PiesP/ShortenVideoTo140Sec/releases
+        echo "Release response: $response"
+        $parsedResponse = $response | ConvertFrom-Json
+        if ($parsedResponse -eq $null) {
+          Write-Host "Failed to parse response or response is empty"
+        }
+        Write-Host "Parsed Response: $parsedResponse"
       shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-
