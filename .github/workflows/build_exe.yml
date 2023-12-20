@@ -31,9 +31,16 @@ jobs:
         NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
       run: |
         $newName = "ShortenVideoTo140Sec-$env:NEW_TAG.exe"
-        $newName | Write-Output
-        Rename-Item .\dist\main.exe ".\dist\$newName"
-      shell: pwsh
+        $distPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "dist"
+        $oldFilePath = Join-Path -Path $distPath -ChildPath "main.exe"
+        $newFilePath = Join-Path -Path $distPath -ChildPath $newName
+        Get-ChildItem $distPath | Write-Output
+        if (Test-Path $oldFilePath) {
+          Rename-Item -Path $oldFilePath -NewName $newFilePath
+        } else {
+          Write-Error "File $oldFilePath not found"
+        }
+      shell: pwsh      
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
