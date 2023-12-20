@@ -29,7 +29,9 @@ jobs:
     - name: Rename built EXE
       run: |
         $newName = "ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
-        Rename-Item ./dist/main.exe "./dist/$newName"
+        Get-ChildItem ./dist # dist 폴더 내 파일 목록 출력
+        Rename-Item .\dist\main.exe ".\dist\$newName"
+      shell: pwsh
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
