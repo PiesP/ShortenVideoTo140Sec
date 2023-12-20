@@ -6,15 +6,19 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: 3.12
+
+    - name: Read version from version.ini
+      run: |
+        $version = (Get-Content version.ini | Select-String 'ProductVersion=').ToString().Split('=')[1]
+        echo "PRODUCT_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Install dependencies
       run: |
@@ -22,32 +26,18 @@ jobs:
         pip install pyinstaller
   
     - name: Build EXE with PyInstaller
-      run: pyinstaller --onefile --windowed main.py
+      run: pyinstaller --onefile --windowed --noconsole --version-file=version.ini main.py
 
     - name: Rename EXE for Release
-      run: Rename-Item dist\main.exe ShortenVideoTo140Sec.exe
-  
+      run: Rename-Item dist\main.exe ShortenVideoTo140Sec-$env:PRODUCT_VERSION.exe
+      
     - name: Generate tag from date
       run: |
         echo "TAG=$(Get-Date -Format 'yyyyMMddHHmmss')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Release
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ env.TAG }}
-        release_name: Release ${{ env.TAG }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
-
-    - name: Upload EXE to GitHub Releases
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/ShortenVideoTo140Sec.exe
-        asset_name: ShortenVideoTo140Sec.exe
-        asset_content_type: application/octet-stream
+        files: ./dist/ShortenVideoTo140Sec-$env:PRODUCT_VERSION.exe
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
