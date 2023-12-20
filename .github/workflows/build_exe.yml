@@ -30,23 +30,24 @@ jobs:
 
     - name: Create GitHub Release
       run: |
-        RESPONSE=$(curl -s -X POST \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\"}" \
-          https://api.github.com/repos/OWNER/REPO/releases)
-        echo "Release response: $RESPONSE"
+        $response = curl -s -X POST `
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
+          -H "Content-Type: application/json" `
+          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\"}" `
+          https://api.github.com/repos/PiesP/ShortenVideoTo140Sec/releases
+        echo "Release response: $response"
+      shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Assuming main.exe is the output from PyInstaller
     - name: Upload Release Asset
       run: |
-        RELEASE_ID=$(echo $RESPONSE | jq -r '.id')
-        curl -s -X POST \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe \
-          "https://uploads.github.com/repos/OWNER/REPO/releases/$RELEASE_ID/assets?name=ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
+        $releaseId = (ConvertFrom-Json $response).id
+        curl -s -X POST `
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
+          -H "Content-Type: application/octet-stream" `
+          --data-binary @./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe `
+          "https://uploads.github.com/repos/PiesP/ShortenVideoTo140Sec/releases/$releaseId/assets?name=ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
+      shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
