@@ -33,15 +33,15 @@ jobs:
         $response = curl -s -X POST `
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
           -H "Content-Type: application/json" `
-          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\"}" `
+          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\", \"draft\": false, \"prerelease\": false}" `
           https://api.github.com/repos/PiesP/ShortenVideoTo140Sec/releases
         echo "Release response: $response"
         $parsedResponse = $response | ConvertFrom-Json
-        if ($parsedResponse -eq $null) {
-          Write-Host "Failed to parse response or response is empty"
+        if ($parsedResponse.id -eq $null) {
+          Write-Error "Release creation failed. Response: $response"
+          exit 1
         }
-        Write-Host "Parsed Response: $parsedResponse"
+        Write-Host "Release created with ID: $($parsedResponse.id)"
       shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
