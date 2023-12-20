@@ -38,10 +38,12 @@ jobs:
       run: |
         git tag ${{ env.TAG }}
         git push origin ${{ env.TAG }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
         files: ./dist/ShortenVideoTo140Sec-${{ env.TAG }}.exe
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
