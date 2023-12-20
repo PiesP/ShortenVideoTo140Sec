@@ -29,6 +29,7 @@ jobs:
     - name: Rename built EXE
       run: |
         $newName = "ShortenVideoTo140Sec-$("{{ steps.tag_version.outputs.new_tag }}").exe"
+        $newName | Write-Output
         Rename-Item .\dist\main.exe ".\dist\$newName"
       shell: pwsh
     - name: Release
