@@ -31,6 +31,7 @@ jobs:
         NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
       run: |
         $newName = "ShortenVideoTo140Sec-$env:NEW_TAG.exe"
+        $newName | Write-Output
         Rename-Item .\dist\main.exe ".\dist\$newName"
       shell: pwsh
     - name: Release
