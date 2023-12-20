@@ -28,6 +28,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Rename built EXE
       run: |
+        ${{ steps.tag_version.outputs.new_tag }} | Write-Output
         $newName = "ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
         Get-ChildItem ./dist # dist 폴더 내 파일 목록 출력
         Rename-Item .\dist\main.exe ".\dist\$newName"
