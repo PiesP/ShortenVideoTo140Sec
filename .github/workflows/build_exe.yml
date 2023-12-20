@@ -26,7 +26,7 @@ jobs:
         pip install pyinstaller
   
     - name: Build EXE with PyInstaller
-      run: pyinstaller --onefile --windowed --noconsole --version-file=version.ini main.py
+      run: pyinstaller --onefile --windowed --noconsole main.py
 
     - name: Rename EXE for Release
       run: Rename-Item dist\main.exe ShortenVideoTo140Sec-$env:PRODUCT_VERSION.exe
