@@ -29,16 +29,10 @@ jobs:
         echo "TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         Rename-Item .\dist\main.exe "ShortenVideoTo140Sec-$tag.exe"
 
-    - name: Push tag
-      run: |
-        git tag ${{ env.TAG }}
-        git push origin ${{ env.TAG }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
-
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ./dist/ShortenVideoTo140Sec-$($env:TAG).exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
+        - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ./dist/ShortenVideoTo140Sec-${{ env.TAG }}.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
