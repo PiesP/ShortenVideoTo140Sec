@@ -23,11 +23,21 @@ jobs:
     - name: Build EXE with PyInstaller
       run: pyinstaller --onefile --windowed --noconsole main.py
 
-    - name: Generate tag from date
+      - name: Generate tag from date
       run: |
         $tag = Get-Date -Format 'yyyyMMddHHmmss'
         echo "TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         Rename-Item .\dist\main.exe "ShortenVideoTo140Sec-$tag.exe"
+
+    - name: Configure Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+    - name: Create and push tag
+      run: |
+        git tag ${{ env.TAG }}
+        git push origin ${{ env.TAG }}
 
     - name: Release
       uses: softprops/action-gh-release@v1
