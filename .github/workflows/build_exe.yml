@@ -27,9 +27,10 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Rename built EXE
+      env:
+        NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
       run: |
-        $newName = "ShortenVideoTo140Sec-$("{{ steps.tag_version.outputs.new_tag }}").exe"
-        $newName | Write-Output
+        $newName = "ShortenVideoTo140Sec-$env:NEW_TAG.exe"
         Rename-Item .\dist\main.exe ".\dist\$newName"
       shell: pwsh
     - name: Release
