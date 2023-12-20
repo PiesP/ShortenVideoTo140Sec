@@ -31,14 +31,14 @@ jobs:
 
     - name: Push tag
       run: |
-        git config --global user.name 'Your Name'
-        git config --global user.email 'your-email@example.com'
         git tag ${{ env.TAG }}
         git push origin ${{ env.TAG }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
         files: ./dist/ShortenVideoTo140Sec-$($env:TAG).exe
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
