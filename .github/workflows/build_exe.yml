@@ -44,4 +44,4 @@ jobs:
       with:
         files: ./dist/ShortenVideoTo140Sec-${{ env.TAG }}.exe
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
