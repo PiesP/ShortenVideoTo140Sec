@@ -3,6 +3,8 @@ name: Build EXE with PyInstaller
 on:
   workflow_dispatch:
 
+permissions: write-all
+
 jobs:
   build:
     runs-on: windows-latest
@@ -34,7 +36,6 @@ jobs:
       uses: mathieudutour/github-tag-action@v6.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # Additional options can be specified here
 
     - name: Release
       uses: softprops/action-gh-release@v1
