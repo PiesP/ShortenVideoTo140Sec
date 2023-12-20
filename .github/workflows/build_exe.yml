@@ -3,6 +3,11 @@ name: Build EXE with PyInstaller
 on:
   workflow_dispatch:
 
+  permissions:
+      pull-requests: write
+      issues: write
+      repository-projects: write
+
 jobs:
   build:
     runs-on: windows-latest
