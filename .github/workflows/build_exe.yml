@@ -28,25 +28,11 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create GitHub Release
-      run: |
-        $response = curl -s -X POST `
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
-          -H "Content-Type: application/json" `
-          -d "{\"tag_name\": \"${{ steps.tag_version.outputs.new_tag }}\", \"name\": \"Release ${{ steps.tag_version.outputs.new_tag }}\", \"draft\": false, \"prerelease\": false}" `
-          https://api.github.com/repos/PiesP/ShortenVideoTo140Sec/releases
-        echo "Release response: $response"
-        if ($response -eq $null -or $response -eq '') {
-          Write-Error "No response received from GitHub API"
-          exit 1
-        }
-        $parsedResponse = $response | ConvertFrom-Json
-        if ($parsedResponse.id -eq $null) {
-          Write-Error "Release creation failed. Response: $response"
-          exit 1
-        }
-        Write-Host "Release created with ID: $($parsedResponse.id)"
-      shell: pwsh
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+    - name: Automatic Release
+      uses: marvinpinto/action-automatic-releases@latest
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        automatic_release_tag: ${{ steps.tag_version.outputs.new_tag }}
+        prerelease: false
+        files: |
+          ./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe
