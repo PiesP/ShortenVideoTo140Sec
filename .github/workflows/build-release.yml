@@ -1,7 +1,9 @@
-name: Build EXE with PyInstaller
+name: Build and Release on Tag
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - '*'
 
 permissions: write-all
 
@@ -21,13 +23,7 @@ jobs:
         pip install pyinstaller
     - name: Build EXE with PyInstaller
       run: pyinstaller --onefile --windowed --noconsole main.py
-
-    - name: Bump version and push tag
-      id: tag_version
-      uses: mathieudutour/github-tag-action@v6.1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-
+    
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')

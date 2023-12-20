@@ -1,0 +1,17 @@
+name: Manual Tag Creation
+
+on:
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Bump version and push tag
+      uses: mathieudutour/github-tag-action@v6.1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
