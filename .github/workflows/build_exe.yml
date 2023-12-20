@@ -43,12 +43,14 @@ jobs:
     - name: Upload Release Asset
       run: |
         $releaseId = (ConvertFrom-Json $response).id
+        $filePath = "${{ github.workspace }}/dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
         curl -s -X POST `
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
           -H "Content-Type: application/octet-stream" `
-          --data-binary `"@./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe`" `
+          --data-binary @$filePath `
           "https://uploads.github.com/repos/PiesP/ShortenVideoTo140Sec/releases/$releaseId/assets?name=ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
       shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+
