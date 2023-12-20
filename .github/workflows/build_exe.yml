@@ -29,7 +29,7 @@ jobs:
       run: pyinstaller --onefile --windowed --noconsole main.py
 
     - name: Rename EXE for Release
-      run: Rename-Item dist\main.exe ShortenVideoTo140Sec-$env:PRODUCT_VERSION.exe
+      run: Rename-Item dist\main.exe "ShortenVideoTo140Sec-$($env:PRODUCT_VERSION).exe"
       
     - name: Generate tag from date
       run: |
