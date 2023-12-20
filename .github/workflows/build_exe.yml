@@ -31,7 +31,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          ./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe
+        files: ./dist/ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
