@@ -21,16 +21,15 @@ jobs:
         pip install pyinstaller
     - name: Build EXE with PyInstaller
       run: pyinstaller --onefile --windowed --noconsole main.py
-
+    - name: Rename built EXE
+      run: |
+        $newName = "ShortenVideoTo140Sec-${{ steps.tag_version.outputs.new_tag }}.exe"
+        Rename-Item ./dist/main.exe "./dist/$newName"
     - name: Bump version and push tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Wait for Tag Push
-      run: sleep 10 # 10초 대기
-
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
