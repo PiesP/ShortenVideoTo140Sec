@@ -59,41 +59,56 @@ def process_video_ffmpeg(video_path, image_path, target_duration, progress_var, 
         duration = get_video_duration(video_path)
         if duration is None:
             raise Exception("Unable to get video duration")
-        speed_factor = duration / target_duration
 
         file_name_without_ext = os.path.splitext(os.path.basename(video_path))[0]
         output_video_name = f"{file_name_without_ext}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.mp4"
-        output_video_path = os.path.join(os.path.dirname(video_path), output_video_name)
+        output_video_path = os.path.join(os.path.dirname(video_path), output_video_name).replace('\\', '/')
 
-        cmd = [
-            'ffmpeg',
-            '-i', video_path,
-            '-i', image_path,
-            '-filter_complex', 
-            f"[0:v]setpts={1/speed_factor}*PTS[v];[v][1]overlay=enable='eq(n,0)'", 
-            '-movflags', 'faststart',
-            '-c:v', 'libx265' if encoder == 'libx265' else 'hevc_nvenc',
-            '-t', str(target_duration),
-            '-y', output_video_path
-        ]
+        # 140초 미만인 경우 간소화된 명령어 사용
+        if duration <= target_duration:
+            cmd = [
+                'ffmpeg',
+                '-i', video_path,
+                '-i', image_path,
+                '-c:v', encoder,
+                '-c:a', 'copy',  # 오디오 코덱은 그대로 복사
+                '-y', output_video_path
+            ]
+        else:
+            # 140초 이상인 경우 속도 조절 필터 적용
+            speed_factor = duration / target_duration
+            setpts_filter = f"setpts={1/speed_factor}*PTS"
+            atempo_filter = ""
+            while speed_factor > 2.0:
+                atempo_filter += "atempo=2.0,"
+                speed_factor /= 2.0
+            if speed_factor > 1.0:
+                atempo_filter += f"atempo={speed_factor}"
+
+            cmd = [
+                'ffmpeg',
+                '-i', video_path,
+                '-i', image_path,
+                '-filter_complex', f"[0:v]{setpts_filter}[v];[0:a]{atempo_filter}[a]",
+                '-map', '[v]',
+                '-map', '[a]',
+                '-movflags', 'faststart',
+                '-c:v', encoder,
+                '-y', output_video_path
+            ]
+
+        print(cmd)
+        logging.info("Executing FFmpeg command: %s", ' '.join(cmd))
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW)
 
-        for line in iter(process.stdout.readline, ""):
-            if cancel_event.is_set():
-                process.terminate()
-                break
-            match = re.search(r'frame=\s*(\d+)', line)
-            if match:
-                frame = int(match.group(1))
-                progress = min(frame / 1000, 1.0) * 100
-                root.after(0, lambda: update_progress(progress_var, status_var, progress, current_task))
+        update_ffmpeg_progress(process, progress_var, status_var, duration, current_task, root, cancel_event)
 
-        process.stdout.close()
-        process.wait()
+        if process.returncode != 0:
+            raise Exception(f"FFmpeg process failed with exit code {process.returncode}")
 
         if not os.path.exists(output_video_path):
-            raise Exception("Video processing failed")
+            raise Exception("Output video file not found after processing")
 
         return output_video_path
     except Exception as e:
@@ -102,22 +117,26 @@ def process_video_ffmpeg(video_path, image_path, target_duration, progress_var, 
         return None
 
 def process_video(video_path, image_path, progress_var, status_var, cancel_event, root, encoder, on_processing_finished):
-    target_duration = 140
     try:
+        duration = get_video_duration(video_path)
+        if duration is None:
+            raise Exception("Unable to get video duration")
+
+        target_duration = 140 if duration > 140 else duration
         output_video_path = process_video_ffmpeg(video_path, image_path, target_duration, progress_var, status_var, root, cancel_event, encoder)
+
         if cancel_event.is_set():
             messagebox.showinfo("Cancelled", "Process was cancelled")
-        elif output_video_path:
-            messagebox.showinfo("Completed", f"Video processing completed. Output saved to {output_video_path}")
-        else:
-            messagebox.showerror("Error", "An error occurred during video processing")
+            return None
+        if not output_video_path:
+            raise Exception("Video processing returned no output path")
 
         if not os.path.exists(output_video_path):
-            raise Exception("Video processing failed")
+            raise Exception("Output video file not found after processing")
 
+        messagebox.showinfo("Completed", f"Video processing completed. Output saved to {output_video_path}")
         on_processing_finished()
         return output_video_path
     except Exception as e:
-
         logging.error("Exception occurred during video processing: %s", e)
         messagebox.showerror("Processing Error", f"An error occurred during video processing: {e}")
