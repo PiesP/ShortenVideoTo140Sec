@@ -67,6 +67,11 @@ def main():
     cancel_button.pack()
 
     video_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.mpeg *.mpg *.webm *.ogg")])
+    if not video_path:
+        messagebox.showinfo("Cancelled", "No video file selected")
+        root.quit()
+        return
+
     image_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png *.bmp *.gif *.tif *.tiff *.webp")])
 
     if not video_path:
