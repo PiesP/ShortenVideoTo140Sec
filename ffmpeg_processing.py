@@ -64,18 +64,16 @@ def process_video_ffmpeg(video_path, image_path, target_duration, progress_var, 
         output_video_name = f"{file_name_without_ext}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.mp4"
         output_video_path = os.path.join(os.path.dirname(video_path), output_video_name).replace('\\', '/')
 
-        # 140초 미만인 경우 간소화된 명령어 사용
         if duration <= target_duration:
             cmd = [
                 'ffmpeg',
                 '-i', video_path,
                 '-i', image_path,
                 '-c:v', encoder,
-                '-c:a', 'copy',  # 오디오 코덱은 그대로 복사
+                '-c:a', 'copy',
                 '-y', output_video_path
             ]
         else:
-            # 140초 이상인 경우 속도 조절 필터 적용
             speed_factor = duration / target_duration
             setpts_filter = f"setpts={1/speed_factor}*PTS"
             atempo_filter = ""
@@ -94,6 +92,7 @@ def process_video_ffmpeg(video_path, image_path, target_duration, progress_var, 
                 '-map', '[a]',
                 '-movflags', 'faststart',
                 '-c:v', encoder,
+                '-t', str(target_duration),
                 '-y', output_video_path
             ]
 
@@ -122,7 +121,7 @@ def process_video(video_path, image_path, progress_var, status_var, cancel_event
         if duration is None:
             raise Exception("Unable to get video duration")
 
-        target_duration = 140 if duration > 140 else duration
+        target_duration = 139.99 if duration > 139.99 else duration
         output_video_path = process_video_ffmpeg(video_path, image_path, target_duration, progress_var, status_var, root, cancel_event, encoder)
 
         if cancel_event.is_set():
