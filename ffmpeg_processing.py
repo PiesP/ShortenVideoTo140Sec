@@ -70,7 +70,7 @@ def process_video_ffmpeg(video_path, image_path, target_duration, progress_var, 
                 '-i', video_path,
                 '-i', image_path,
                 '-c:v', encoder,
-                '-c:a', 'copy',
+                '-movflags', 'faststart',
                 '-y', output_video_path
             ]
         else:
