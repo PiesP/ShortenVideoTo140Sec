@@ -53,17 +53,19 @@ jobs:
     - name: Build EXE with Nuitka
       run: python -m nuitka --onefile --windows-disable-console --assume-yes-for-downloads main.py
 
-    - name: Rename built EXE
+    - name: Rename and move built EXE
       env:
         NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
       run: |
         $newName = "ShortenVideoTo140Sec-$env:NEW_TAG.exe"
-        $distPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "main.dist"
-        $oldFilePath = Join-Path -Path $distPath -ChildPath "main.exe"
+        $distPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "dist"
+        $mainDistPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "main.dist"
+        $oldFilePath = Join-Path -Path $mainDistPath -ChildPath "main.exe"
         $newFilePath = Join-Path -Path $distPath -ChildPath $newName
-        Get-ChildItem $distPath | Write-Output
+        Get-ChildItem $mainDistPath | Write-Output
         if (Test-Path $oldFilePath) {
-          Rename-Item -Path $oldFilePath -NewName $newFilePath
+          New-Item -ItemType Directory -Force -Path $distPath
+          Move-Item -Path $oldFilePath -Destination $newFilePath
         } else {
           Write-Error "File $oldFilePath not found"
         }
