@@ -51,7 +51,7 @@ jobs:
       shell: pwsh
 
     - name: Build EXE with Nuitka
-      run: python -m nuitka --onefile --windows-disable-console main.py
+      run: python -m nuitka --onefile --windows-disable-console --assume-yes-for-downloads main.py
 
     - name: Rename built EXE
       env:
