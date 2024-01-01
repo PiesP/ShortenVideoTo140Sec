@@ -102,7 +102,7 @@ def process_video_ffmpeg(video_path, image_path, progress_var, status_var, root,
             cmd.extend(['-progress', temp_progress_file.name])
 
         logging.info("Executing FFmpeg command: %s", ' '.join(cmd))
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW)
 
         progress_thread = threading.Thread(target=update_ffmpeg_progress, args=(process, progress_var, status_var, current_task, root, cancel_event, target_duration))
         progress_thread.start()

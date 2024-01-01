@@ -1,4 +1,4 @@
-name: Build EXE with PyInstaller
+name: Build EXE with Nuitka
 
 on:
   workflow_dispatch:
@@ -17,10 +17,15 @@ jobs:
       with:
         python-version: 3.12
 
-    - name: Install dependencies
+    - name: Install Nuitka and dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
+        pip install nuitka
+
+    - name: Install Visual Studio build tools (C Compiler)
+      uses: egor-tensin/setup-msvc@v1
+      with:
+        version: 2019
 
     - name: Bump version and push tag
       id: tag_version
@@ -41,15 +46,15 @@ jobs:
         (Get-Content $mainPyPath) -replace 'VERSION_PLACEHOLDER', $version | Set-Content $mainPyPath
       shell: pwsh
 
-    - name: Build EXE with PyInstaller
-      run: pyinstaller --onefile --windowed --noconsole main.py
+    - name: Build EXE with Nuitka
+      run: python -m nuitka --onefile --windows-disable-console main.py
 
     - name: Rename built EXE
       env:
         NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
       run: |
         $newName = "ShortenVideoTo140Sec-$env:NEW_TAG.exe"
-        $distPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "dist"
+        $distPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "main.dist"
         $oldFilePath = Join-Path -Path $distPath -ChildPath "main.exe"
         $newFilePath = Join-Path -Path $distPath -ChildPath $newName
         Get-ChildItem $distPath | Write-Output
