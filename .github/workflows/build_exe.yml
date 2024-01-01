@@ -1,4 +1,4 @@
-name: Build EXE with Nuitka
+name: Build EXE with PyInstaller
 
 on:
   workflow_dispatch:
@@ -15,21 +15,12 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.11
+        python-version: 3.12
 
-    - name: Install Nuitka and dependencies
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install nuitka
-
-    - name: Install compiler
-      id: install_cc
-      uses: rlalik/setup-cpp-compiler@master
-      with:
-        compiler: latest
-
-    - name: Set Nuitka downloads environment variable
-      run: echo "NUITKA_DOWNLOADS=1" >> $GITHUB_ENV
+        pip install pyinstaller
 
     - name: Bump version and push tag
       id: tag_version
@@ -50,22 +41,20 @@ jobs:
         (Get-Content $mainPyPath) -replace 'VERSION_PLACEHOLDER', $version | Set-Content $mainPyPath
       shell: pwsh
 
-    - name: Build EXE with Nuitka
-      run: python -m nuitka --onefile --windows-disable-console --assume-yes-for-downloads main.py
+    - name: Build EXE with PyInstaller
+      run: pyinstaller --onefile --windowed --noconsole main.py
 
-    - name: Rename and move built EXE
+    - name: Rename built EXE
       env:
         NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
       run: |
         $newName = "ShortenVideoTo140Sec-$env:NEW_TAG.exe"
         $distPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "dist"
-        $mainDistPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "main.dist"
-        $oldFilePath = Join-Path -Path $mainDistPath -ChildPath "main.exe"
+        $oldFilePath = Join-Path -Path $distPath -ChildPath "main.exe"
         $newFilePath = Join-Path -Path $distPath -ChildPath $newName
-        Get-ChildItem $mainDistPath | Write-Output
+        Get-ChildItem $distPath | Write-Output
         if (Test-Path $oldFilePath) {
-          New-Item -ItemType Directory -Force -Path $distPath
-          Move-Item -Path $oldFilePath -Destination $newFilePath
+          Rename-Item -Path $oldFilePath -NewName $newFilePath
         } else {
           Write-Error "File $oldFilePath not found"
         }
