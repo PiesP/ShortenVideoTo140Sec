@@ -22,11 +22,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install nuitka
 
-    - name: Set up GCC
-      uses: egor-tensin/setup-gcc@v1
+    - name: Install compiler
+      id: install_cc
+      uses: rlalik/setup-cpp-compiler@master
       with:
-        version: latest
-        platform: x64
+        compiler: latest
 
     - name: Bump version and push tag
       id: tag_version
