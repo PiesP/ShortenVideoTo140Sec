@@ -22,10 +22,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install nuitka
 
-    - name: Install Visual Studio build tools (C Compiler)
-      uses: egor-tensin/setup-msvc@v1
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
       with:
-        version: 2019
+        version: latest
+        platform: x64
 
     - name: Bump version and push tag
       id: tag_version
