@@ -4,7 +4,6 @@ from tkinter import filedialog, messagebox, ttk
 import datetime
 import os
 import logging
-import ffmpeg_processing
 
 ENCODER = None
 CREATE_NO_WINDOW = 0x08000000
@@ -22,22 +21,23 @@ def get_current_timestamp():
 
 def start_processing(video_path, image_path, progress_var, status_var, cancel_event, root):
     if video_path:
+        import ffmpeg_processing
         processing_thread = threading.Thread(target=ffmpeg_processing.process_video, args=(video_path, image_path, progress_var, status_var, cancel_event, root, ENCODER))
         processing_thread.start()
     else:
         messagebox.showinfo("Cancelled", "Process cancelled by user")
         root.quit()
 
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-import threading
-import ffmpeg_processing
-
 def main():
     global ENCODER
     root = tk.Tk()
     root.title("Shorten Video To 140s")
     root.geometry("400x100")
+
+    import ffmpeg_processing
+    if not ffmpeg_processing.is_ffmpeg_installed():
+        messagebox.showerror("FFmpeg Not Found", "FFmpeg is not installed. Please install FFmpeg to proceed.")
+        return
 
     if not ffmpeg_processing.is_ffmpeg_encoder_available('hevc_nvenc'):
         if not ffmpeg_processing.is_ffmpeg_encoder_available('libx265'):
