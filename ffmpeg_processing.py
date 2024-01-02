@@ -123,7 +123,7 @@ def process_video_ffmpeg(video_path, image_path, progress_var, status_var, root,
 
 def process_video(video_path, image_path, progress_var, status_var, cancel_event, root, encoder, on_processing_finished):
     try:
-        target_duration = 139.99
+        target_duration = 139.9
         output_video_path = process_video_ffmpeg(video_path, image_path, progress_var, status_var, root, cancel_event, encoder, target_duration)
 
         if cancel_event.is_set():
