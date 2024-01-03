@@ -78,6 +78,9 @@ def prepare_ffmpeg_command(video_path, image_path, encoder, target_duration):
 
     cmd = ['ffmpeg', '-i', video_path, '-i', image_path]
 
+    video_filters = []
+    video_filters.append('scale=1280:720:force_original_aspect_ratio=decrease')
+
     if duration > target_duration:
         speed_factor = duration / target_duration
         setpts_filter = f"setpts={1/speed_factor}*PTS"
@@ -87,7 +90,13 @@ def prepare_ffmpeg_command(video_path, image_path, encoder, target_duration):
             speed_factor /= 2.0
         if speed_factor > 1.0:
             atempo_filter += f",atempo={speed_factor}"
-        cmd.extend(['-filter_complex', f"[0:v]{setpts_filter}[v];[0:a]{atempo_filter}[a]", '-map', '[v]', '-map', '[a]'])
+
+        video_filters.append(setpts_filter)
+        audio_filter = atempo_filter
+
+        cmd.extend(['-filter_complex', f"[0:v]{','.join(video_filters)}[v];[0:a]{audio_filter}[a]", '-map', '[v]', '-map', '[a]'])
+    else:
+        cmd.extend(['-vf', ','.join(video_filters)])
 
     cmd.extend(['-c:v', encoder, '-movflags', 'faststart', '-y', output_video_path])
     return cmd, output_video_path
