@@ -11,8 +11,11 @@ import tempfile
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def run_ffmpeg_command(command):
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
     try:
-        return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8')
+        return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo)
     except FileNotFoundError:
         return None
 
@@ -152,7 +155,12 @@ def process_video_ffmpeg(video_path, original_video_path, progress_var, status_v
             cmd.extend(['-progress', temp_progress_file.name])
 
         logging.info("Executing FFmpeg command: %s", ' '.join(cmd))
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW)
+
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=startupinfo)
         
         progress_thread = threading.Thread(target=update_ffmpeg_progress, args=(process, progress_var, status_var, current_task, root, cancel_event, target_duration))
         progress_thread.start()
@@ -169,7 +177,7 @@ def process_video_ffmpeg(video_path, original_video_path, progress_var, status_v
         if not os.path.exists(output_video_path):
             raise Exception("Output video file not found after processing")
 
-        progress_var.set(100)  # Update progress to 3/3
+        progress_var.set(100)
         return output_video_path
     except subprocess.CalledProcessError as e:
         logging.error("FFmpeg process error: %s", str(e))
