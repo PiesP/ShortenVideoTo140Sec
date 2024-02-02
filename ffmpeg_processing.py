@@ -11,11 +11,14 @@ import tempfile
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def run_ffmpeg_command(command):
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = subprocess.SW_HIDE
     try:
-        return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo)
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+            return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo)
+        else:
+            return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8')
     except FileNotFoundError:
         return None
 
@@ -146,46 +149,30 @@ def prepare_ffmpeg_command(video_path, original_video_path, encoder, target_dura
     return cmd, output_video_path
 
 def process_video_ffmpeg(video_path, original_video_path, progress_var, status_var, root, cancel_event, encoder, target_duration):
-    current_task = "Processing video"
-    status_var.set(f"{current_task} in progress...")
-
+    cmd, output_video_path = prepare_ffmpeg_command(video_path, original_video_path, encoder, target_duration)
+    
     try:
-        cmd, output_video_path = prepare_ffmpeg_command(video_path, original_video_path, encoder, target_duration)
-        with tempfile.NamedTemporaryFile(delete=False) as temp_progress_file:
-            cmd.extend(['-progress', temp_progress_file.name])
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
 
         logging.info("Executing FFmpeg command: %s", ' '.join(cmd))
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo)
 
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startupinfo.wShowWindow = subprocess.SW_HIDE
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', bufsize=1, creationflags=subprocess.CREATE_NO_WINDOW, startupinfo=startupinfo)
-        
-        progress_thread = threading.Thread(target=update_ffmpeg_progress, args=(process, progress_var, status_var, current_task, root, cancel_event, target_duration))
-        progress_thread.start()
-        stdout, stderr = process.communicate()
-        progress_thread.join()
-
-        exit_code = process.returncode
-        if exit_code != 0:
-            logging.error("FFmpeg process failed with exit code %d", exit_code)
-            logging.error("FFmpeg command: %s", ' '.join(cmd))
-            logging.error("FFmpeg output: %s", stderr.strip())
-            raise Exception(f"FFmpeg process failed with exit code {exit_code}")
-
-        if not os.path.exists(output_video_path):
-            raise Exception("Output video file not found after processing")
+        if result.returncode != 0:
+            logging.error("FFmpeg process failed with exit code %d", result.returncode)
+            logging.error("FFmpeg output: %s", result.stderr.strip())
+            raise Exception("FFmpeg process failed")
 
         progress_var.set(100)
+        status_var.set("Processing complete.")
+
         return output_video_path
-    except subprocess.CalledProcessError as e:
-        logging.error("FFmpeg process error: %s", str(e))
-        messagebox.showerror("Processing Error", f"FFmpeg process error: {e}")
-        return None
     except Exception as e:
-        logging.error("Exception occurred during video processing: %s", e)
-        messagebox.showerror("Processing Error", f"An error occurred during video processing: {e}")
+        logging.error("Video processing error: %s", str(e))
+        messagebox.showerror("Error", "Failed to process video")
         return None
 
 def process_video(video_path, image_path, progress_var, status_var, cancel_event, root, encoder, on_processing_finished):
