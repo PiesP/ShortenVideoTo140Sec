@@ -16,9 +16,9 @@ def run_ffmpeg_command(command):
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = subprocess.SW_HIDE
-            return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo)
+            return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo, creationflags=subprocess.CREATE_NO_WINDOW)
         else:
-            return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8')
+            return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
     except FileNotFoundError:
         return None
 
@@ -60,7 +60,7 @@ def create_image_video(image_path, resolution, temp_dir, progress_var, encoder):
         '-c:a', 'aac', '-shortest',
         '-pix_fmt', 'yuv420p', temp_video_path
     ]
-    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
     progress_var.set(33)
     return temp_video_path
 
@@ -73,7 +73,7 @@ def add_image_video_to_beginning(image_video_path, video_path, temp_dir, progres
         '-c:v', encoder, '-map', '[v]', '-map', '[a]', 
         temp_combined_video_path
     ]
-    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
     progress_var.set(66)
     return temp_combined_video_path
 
@@ -159,7 +159,7 @@ def process_video_ffmpeg(video_path, original_video_path, progress_var, status_v
             startupinfo.wShowWindow = subprocess.SW_HIDE
 
         logging.info("Executing FFmpeg command: %s", ' '.join(cmd))
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo)
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, encoding='utf-8', startupinfo=startupinfo, creationflags=subprocess.CREATE_NO_WINDOW)
 
         if result.returncode != 0:
             logging.error("FFmpeg process failed with exit code %d", result.returncode)
